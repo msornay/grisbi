@@ -16,10 +16,14 @@ Create `~/.grisbirc`:
 path ~/Documents/personal
 path ~/notes/private
 path ~/.ssh
+
+# back up each subdirectory of ~/projects as a separate archive
+folder ~/projects
 ```
 
 Directives:
 - `path <dir>` — directory to back up (supports `~` expansion)
+- `folder <dir>` — back up each immediate subdirectory of `<dir>` as a separate archive
 - Lines starting with `#` or blank lines are ignored
 
 ## Usage
@@ -51,7 +55,7 @@ Deletes `.tar.gz.age` files in the current directory older than the given number
 ## Install
 
 ```bash
-ln -s "$(pwd)/grisbi.sh" ~/bin/grisbi
+ln -s "$(pwd)/grisbi.py" ~/bin/grisbi
 ```
 
 ## Testing
