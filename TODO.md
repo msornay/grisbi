@@ -15,28 +15,34 @@ Encrypted backups of personal text files using `age` + `tar`. Archives are creat
 path ~/Documents/personal
 path ~/notes/private
 path ~/.ssh
+
+# back up each subdirectory of ~/projects as a separate archive
+folder ~/projects
 ```
 
 Directives:
 - `path <dir>` — directory to back up (supports `~` expansion)
+- `folder <dir>` — back up each immediate subdirectory of `<dir>` as a separate archive
 - Lines starting with `#` or blank lines are ignored
 
-## Script: `grisbi.sh`
+## Script: `grisbi.py`
 
 - [x] Write `grisbi.sh` (~40 lines of bash)
+- [x] Rewrite in Python (`grisbi.py`)
+- [x] Add `folder` directive for backing up subdirectories individually
 
 ### Config parser
 
 - Read `~/.grisbirc` line by line
 - Skip comments (`#`) and blank lines
-- Parse `path` directives into an array
+- Parse `path` and `folder` directives
 - Expand `~` to `$HOME`
 - Error if no paths configured
 
 ### Passphrase prompt
 
-- Prompt once with `read -s -p "Passphrase: " PASSPHRASE`
-- Prompt again for confirmation: `read -s -p "Confirm: " PASSPHRASE2`
+- Prompt for passphrase (uses `getpass` on TTY, reads stdin when piped)
+- Prompt again for confirmation
 - Abort if they don't match
 - Export `AGE_PASSPHRASE` env var (supported since age v1.1+)
 
@@ -45,7 +51,7 @@ Directives:
 For each configured path:
 1. `tar cz -C <parent> <basename>` — tar relative to parent dir
 2. Pipe to `age -e -p -o ./<basename>-YYYY-MM-DD-HHMMSS.tar.gz.age` (writes to pwd)
-3. Timestamp format: `date +%Y-%m-%d-%H%M%S`
+3. Timestamp format: `%Y-%m-%d-%H%M%S`
 4. Print each file as it's written
 
 ### Summary
@@ -54,7 +60,7 @@ For each configured path:
 
 ## Install
 
-- [ ] Symlink to PATH: `ln -s ~/src/repos/grisbi/grisbi.sh ~/bin/grisbi` or add repo to PATH
+- [ ] Symlink to PATH: `ln -s ~/src/repos/grisbi/grisbi.py ~/bin/grisbi` or add repo to PATH
 
 ## Testing
 
