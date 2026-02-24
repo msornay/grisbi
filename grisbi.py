@@ -15,6 +15,7 @@ def parse_config(config_path):
     Supported directives:
       path <dir>   — back up a single directory
       folder <dir> — back up each immediate child of <dir> as a separate archive
+      <dir>        — bare path (no directive), treated as "path <dir>"
     """
     if not config_path.is_file():
         print(f"Error: {config_path} not found.", file=sys.stderr)
@@ -26,10 +27,13 @@ def parse_config(config_path):
         if not stripped or stripped.startswith("#"):
             continue
         match = re.match(r"^(path|folder)\s+(.*)", stripped)
-        if not match:
-            continue
-        directive = match.group(1)
-        raw_path = match.group(2).strip()
+        if match:
+            directive = match.group(1)
+            raw_path = match.group(2).strip()
+        else:
+            # Bare path (no directive) treated as "path"
+            directive = "path"
+            raw_path = stripped
         expanded = raw_path.replace("~", str(Path.home()), 1) if raw_path.startswith("~") else raw_path
         entries.append((directive, expanded))
 

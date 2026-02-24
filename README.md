@@ -13,9 +13,9 @@ Create `~/.grisbirc`:
 
 ```
 # paths to back up (one per line, ~ expanded)
-path ~/Documents/personal
-path ~/notes/private
-path ~/.ssh
+~/Documents/personal
+~/notes/private
+~/.ssh
 
 # back up each subdirectory of ~/projects as a separate archive
 folder ~/projects
@@ -24,6 +24,7 @@ folder ~/projects
 Directives:
 - `path <dir>` — directory to back up (supports `~` expansion)
 - `folder <dir>` — back up each immediate subdirectory of `<dir>` as a separate archive
+- `<dir>` — bare path (no directive), treated as `path <dir>`
 - Lines starting with `#` or blank lines are ignored
 
 ## Usage

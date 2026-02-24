@@ -77,6 +77,8 @@ class TestRunner:
             self.test_round_trip_decrypt()
             self.test_nonexistent_path_warning()
             self.test_config_parsing()
+            self.test_bare_path()
+            self.test_bare_path_mixed()
             self.test_folder_directive()
             self.test_folder_nonexistent()
             self.test_folder_empty()
@@ -212,6 +214,46 @@ class TestRunner:
             self.ok("config with comments and blank lines")
         else:
             self.fail(f"config parsing failed: {output}")
+
+    # --- Bare path tests ---
+
+    def test_bare_path(self):
+        print("-- bare path (no directive)")
+        testdata = Path(self.home, "testdata")
+        testdata.mkdir(exist_ok=True)
+        (testdata / "file.txt").write_text("hello")
+        Path(self.home, ".grisbirc").write_text("~/testdata\n")
+
+        outdir = Path(self.tmpdir, "output_bare")
+        outdir.mkdir()
+
+        rc, output = run_grisbi(stdin_text="secret\nsecret\n", cwd=str(outdir))
+        if "1 archive(s) created" in output:
+            self.ok("bare path backs up directory")
+        else:
+            self.fail(f"bare path failed: {output}")
+
+    def test_bare_path_mixed(self):
+        print("-- bare path mixed with directives")
+        testdata = Path(self.home, "testdata")
+        testdata.mkdir(exist_ok=True)
+        (testdata / "file.txt").write_text("hello")
+        notes = Path(self.home, "notes")
+        notes.mkdir(exist_ok=True)
+        (notes / "n.txt").write_text("note")
+
+        Path(self.home, ".grisbirc").write_text(
+            "~/testdata\npath ~/notes\n"
+        )
+
+        outdir = Path(self.tmpdir, "output_bare_mixed")
+        outdir.mkdir()
+
+        rc, output = run_grisbi(stdin_text="secret\nsecret\n", cwd=str(outdir))
+        if "2 archive(s) created" in output:
+            self.ok("bare path works alongside path directive")
+        else:
+            self.fail(f"bare + path mixed failed: {output}")
 
     # --- Folder directive tests ---
 
