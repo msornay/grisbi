@@ -135,6 +135,104 @@ else
   die "config parsing failed: $output"
 fi
 
+# --- Test: --prune missing argument ---
+echo "-- prune: missing argument"
+if output=$("$GRISBI" --prune 2>&1); then
+  die "prune without days should exit non-zero"
+else
+  if echo "$output" | grep -q "Usage.*prune"; then
+    ok "prune missing arg shows usage"
+  else
+    die "unexpected error: $output"
+  fi
+fi
+
+# --- Test: --prune non-numeric argument ---
+echo "-- prune: non-numeric argument"
+if output=$("$GRISBI" --prune abc 2>&1); then
+  die "prune with non-numeric arg should exit non-zero"
+else
+  if echo "$output" | grep -q "Usage.*prune"; then
+    ok "prune non-numeric shows usage"
+  else
+    die "unexpected error: $output"
+  fi
+fi
+
+# --- Test: --prune zero days ---
+echo "-- prune: zero days"
+if output=$("$GRISBI" --prune 0 2>&1); then
+  die "prune with 0 days should exit non-zero"
+else
+  if echo "$output" | grep -q "Usage.*prune"; then
+    ok "prune zero days shows usage"
+  else
+    die "unexpected error: $output"
+  fi
+fi
+
+# --- Test: --prune deletes old files, keeps recent ---
+echo "-- prune: deletes old, keeps recent"
+prunedir="$TMPDIR_TEST/prunedir"
+mkdir -p "$prunedir"
+# Create fake .age files with old and recent timestamps
+touch "$prunedir/docs-2020-01-15-120000.tar.gz.age"   # old
+touch "$prunedir/docs-2020-06-01-080000.tar.gz.age"   # old
+# Use a date far in the future to ensure it's "recent"
+touch "$prunedir/docs-2099-12-31-235959.tar.gz.age"   # recent (far future)
+touch "$prunedir/notes-2020-03-10-090000.tar.gz.age"   # old
+touch "$prunedir/unrelated.txt"                         # not a .age file
+cd "$prunedir"
+output=$("$GRISBI" --prune 30 2>&1)
+if echo "$output" | grep -q "3 archive(s) deleted"; then
+  ok "prune deleted 3 old archives"
+else
+  die "expected 3 deletions: $output"
+fi
+# The future-dated file should still exist
+if [[ -f "$prunedir/docs-2099-12-31-235959.tar.gz.age" ]]; then
+  ok "prune kept recent archive"
+else
+  die "prune should not have deleted recent archive"
+fi
+# unrelated.txt should still exist
+if [[ -f "$prunedir/unrelated.txt" ]]; then
+  ok "prune ignores non-.age files"
+else
+  die "prune should not delete non-.age files"
+fi
+
+# --- Test: --prune in empty directory ---
+echo "-- prune: empty directory"
+emptydir="$TMPDIR_TEST/emptydir"
+mkdir -p "$emptydir"
+cd "$emptydir"
+output=$("$GRISBI" --prune 7 2>&1)
+if echo "$output" | grep -q "0 archive(s) deleted"; then
+  ok "prune in empty dir deletes nothing"
+else
+  die "unexpected output: $output"
+fi
+
+# --- Test: --prune with file that has no parseable timestamp ---
+echo "-- prune: unparseable timestamp"
+baddir="$TMPDIR_TEST/baddir"
+mkdir -p "$baddir"
+touch "$baddir/docs-notadate.tar.gz.age"
+touch "$baddir/docs-2020-01-15-120000.tar.gz.age"  # old, should be deleted
+cd "$baddir"
+output=$("$GRISBI" --prune 30 2>&1)
+if echo "$output" | grep -q "1 archive(s) deleted"; then
+  ok "prune skips unparseable, deletes valid old"
+else
+  die "unexpected output: $output"
+fi
+if [[ -f "$baddir/docs-notadate.tar.gz.age" ]]; then
+  ok "unparseable file kept"
+else
+  die "unparseable file should not be deleted"
+fi
+
 # --- Summary ---
 echo
 total=$((pass + fail))

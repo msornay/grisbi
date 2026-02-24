@@ -72,4 +72,4 @@ age -d archive.tar.gz.age | tar xz
 ## Future
 
 - [ ] `grisbi --restore <file>` subcommand
-- [ ] `grisbi --prune <days>` to delete backups older than N days
+- [x] `grisbi --prune <days>` to delete backups older than N days
