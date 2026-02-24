@@ -61,15 +61,12 @@ For each configured path:
 - [x] Run `grisbi` — encrypted `.age` files appear in pwd with correct timestamps
 - [x] Verify round-trip: `age -d <file> | tar tz` lists expected contents
 
-## Restore (manual)
+## Restore
 
-Not automated. To restore:
+- [x] `grisbi --restore <file>` subcommand
 
-```
-age -d archive.tar.gz.age | tar xz
-```
+Usage: `grisbi --restore <file.tar.gz.age>` — prompts for passphrase, decrypts and extracts into pwd.
 
 ## Future
 
-- [ ] `grisbi --restore <file>` subcommand
 - [x] `grisbi --prune <days>` to delete backups older than N days

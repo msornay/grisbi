@@ -1,6 +1,36 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# --- Restore subcommand ---
+if [[ "${1:-}" == "--restore" ]]; then
+  shift
+  if [[ $# -eq 0 ]]; then
+    echo "Usage: grisbi --restore <file.tar.gz.age>" >&2
+    exit 1
+  fi
+  file="$1"
+  if [[ ! -f "$file" ]]; then
+    echo "Error: $file not found." >&2
+    exit 1
+  fi
+
+  read -s -p "Passphrase: " PASSPHRASE
+  echo
+  export AGE_PASSPHRASE="$PASSPHRASE"
+
+  if command -v age-plugin-batchpass >/dev/null 2>&1; then
+    age -d -j batchpass "$file" | tar xz
+  else
+    tmp=$(mktemp)
+    trap 'rm -f "$tmp"' EXIT
+    age -d -p -o "$tmp" "$file" </dev/tty
+    tar xz < "$tmp"
+  fi
+
+  echo "Restored from $file"
+  exit 0
+fi
+
 CONFIG="$HOME/.grisbirc"
 
 # --- Prune subcommand ---

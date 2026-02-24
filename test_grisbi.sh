@@ -233,6 +233,52 @@ else
   die "unparseable file should not be deleted"
 fi
 
+# --- Test: restore missing argument ---
+echo "-- restore missing argument"
+if output=$("$GRISBI" --restore 2>&1); then
+  die "should exit non-zero without file argument"
+else
+  if echo "$output" | grep -q "Usage"; then
+    ok "restore usage error"
+  else
+    die "unexpected error: $output"
+  fi
+fi
+
+# --- Test: restore nonexistent file ---
+echo "-- restore nonexistent file"
+if output=$("$GRISBI" --restore /nonexistent.tar.gz.age 2>&1); then
+  die "should exit non-zero for nonexistent file"
+else
+  if echo "$output" | grep -q "not found"; then
+    ok "restore file not found error"
+  else
+    die "unexpected error: $output"
+  fi
+fi
+
+# --- Test: restore round-trip ---
+echo "-- restore round-trip"
+restore_dir="$TMPDIR_TEST/restored"
+mkdir -p "$restore_dir"
+cd "$restore_dir"
+output=$(printf 'secret\n' | "$GRISBI" --restore "$age_file" 2>&1)
+if echo "$output" | grep -q "Restored from"; then
+  ok "restore success message"
+else
+  die "unexpected restore output: $output"
+fi
+if [[ -f "$restore_dir/testdata/file.txt" ]]; then
+  content=$(cat "$restore_dir/testdata/file.txt")
+  if [[ "$content" == "hello" ]]; then
+    ok "restored file content matches"
+  else
+    die "restored content mismatch: $content"
+  fi
+else
+  die "restored file not found at $restore_dir/testdata/file.txt"
+fi
+
 # --- Summary ---
 echo
 total=$((pass + fail))
