@@ -23,7 +23,7 @@ Directives:
 
 ## Script: `grisbi.sh`
 
-- [ ] Write `grisbi.sh` (~40 lines of bash)
+- [x] Write `grisbi.sh` (~40 lines of bash)
 
 ### Config parser
 
@@ -58,8 +58,8 @@ For each configured path:
 
 ## Testing
 
-- [ ] Run `grisbi` — encrypted `.age` files appear in pwd with correct timestamps
-- [ ] Verify round-trip: `age -d <file> | tar tz` lists expected contents
+- [x] Run `grisbi` — encrypted `.age` files appear in pwd with correct timestamps
+- [x] Verify round-trip: `age -d <file> | tar tz` lists expected contents
 
 ## Restore (manual)
 
