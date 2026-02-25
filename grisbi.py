@@ -13,9 +13,10 @@ def parse_config(config_path):
     """Parse ~/.grisbirc and return list of (directive, expanded_path) tuples.
 
     Supported directives:
-      path <dir>   — back up a single directory
-      folder <dir> — back up each immediate child of <dir> as a separate archive
-      <dir>        — bare path (no directive), treated as "path <dir>"
+      path <dir>      — back up a single directory
+      directory <dir> — alias for path
+      folder <dir>    — back up each immediate child of <dir> as a separate archive
+      <dir>           — bare path (no directive), treated as "path <dir>"
     """
     if not config_path.is_file():
         print(f"Error: {config_path} not found.", file=sys.stderr)
@@ -26,9 +27,11 @@ def parse_config(config_path):
         stripped = line.strip()
         if not stripped or stripped.startswith("#"):
             continue
-        match = re.match(r"^(path|folder)\s+(.*)", stripped)
+        match = re.match(r"^(path|directory|folder)\s+(.*)", stripped)
         if match:
             directive = match.group(1)
+            if directive == "directory":
+                directive = "path"
             raw_path = match.group(2).strip()
         else:
             # Bare path (no directive) treated as "path"
@@ -64,7 +67,12 @@ def resolve_backup_dirs(entries):
                 continue
             children = sorted(child for child in p.iterdir() if child.is_dir())
             if not children:
-                print(f"Warning: {p} has no subdirectories, skipping.", file=sys.stderr)
+                print(
+                    f"Warning: {p} has no subdirectories, skipping."
+                    f" (To back up the directory itself, use 'path {path_str}'"
+                    f" instead of 'folder')",
+                    file=sys.stderr,
+                )
             dirs.extend(children)
     return dirs
 

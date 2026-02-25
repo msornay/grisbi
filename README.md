@@ -22,8 +22,9 @@ folder ~/projects
 ```
 
 Directives:
-- `path <dir>` — directory to back up (supports `~` expansion)
-- `folder <dir>` — back up each immediate subdirectory of `<dir>` as a separate archive
+- `path <dir>` — back up this directory as a single archive (supports `~` expansion)
+- `directory <dir>` — alias for `path`
+- `folder <dir>` — back up each immediate subdirectory of `<dir>` as a separate archive (note: does **not** back up the directory itself — use `path` for that)
 - `<dir>` — bare path (no directive), treated as `path <dir>`
 - Lines starting with `#` or blank lines are ignored
 

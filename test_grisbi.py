@@ -82,6 +82,9 @@ class TestRunner:
             self.test_folder_directive()
             self.test_folder_nonexistent()
             self.test_folder_empty()
+            self.test_folder_empty_suggests_path()
+            self.test_directory_directive()
+            self.test_directory_directive_mixed()
             self.test_prune_missing_arg()
             self.test_prune_non_numeric()
             self.test_prune_zero_days()
@@ -327,6 +330,67 @@ class TestRunner:
             self.ok("folder empty dir warning")
         else:
             self.fail(f"expected subdirectory warning: {output}")
+
+    def test_folder_empty_suggests_path(self):
+        print("-- folder empty dir suggests path")
+        emptyparent = Path(self.home, "emptyparent2")
+        emptyparent.mkdir()
+        (emptyparent / "file.txt").write_text("not a dir")
+
+        testdata = Path(self.home, "testdata")
+        testdata.mkdir(exist_ok=True)
+        Path(self.home, ".grisbirc").write_text(
+            "path ~/testdata\nfolder ~/emptyparent2\n"
+        )
+
+        outdir = Path(self.tmpdir, "output_folder_suggest")
+        outdir.mkdir()
+
+        rc, output = run_grisbi(stdin_text="secret\nsecret\n", cwd=str(outdir))
+        if "use 'path" in output.lower() or "instead of 'folder'" in output:
+            self.ok("folder empty suggests using path")
+        else:
+            self.fail(f"expected path suggestion: {output}")
+
+    # --- Directory directive tests ---
+
+    def test_directory_directive(self):
+        print("-- directory directive (alias for path)")
+        testdata = Path(self.home, "testdata")
+        testdata.mkdir(exist_ok=True)
+        (testdata / "file.txt").write_text("hello")
+        Path(self.home, ".grisbirc").write_text("directory ~/testdata\n")
+
+        outdir = Path(self.tmpdir, "output_directory")
+        outdir.mkdir()
+
+        rc, output = run_grisbi(stdin_text="secret\nsecret\n", cwd=str(outdir))
+        if "1 archive(s) created" in output:
+            self.ok("directory directive backs up directory")
+        else:
+            self.fail(f"directory directive failed: {output}")
+
+    def test_directory_directive_mixed(self):
+        print("-- directory directive mixed with path and folder")
+        testdata = Path(self.home, "testdata")
+        testdata.mkdir(exist_ok=True)
+        (testdata / "file.txt").write_text("hello")
+        notes = Path(self.home, "notes")
+        notes.mkdir(exist_ok=True)
+        (notes / "n.txt").write_text("note")
+
+        Path(self.home, ".grisbirc").write_text(
+            "directory ~/testdata\npath ~/notes\n"
+        )
+
+        outdir = Path(self.tmpdir, "output_directory_mixed")
+        outdir.mkdir()
+
+        rc, output = run_grisbi(stdin_text="secret\nsecret\n", cwd=str(outdir))
+        if "2 archive(s) created" in output:
+            self.ok("directory + path mixed works")
+        else:
+            self.fail(f"directory mixed failed: {output}")
 
     # --- Prune tests ---
 
