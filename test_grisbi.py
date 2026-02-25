@@ -188,7 +188,9 @@ class TestRunner:
 
     def test_nonexistent_path_warning(self):
         print("-- nonexistent path warning")
-        Path(self.home, ".grisbirc").write_text("# comment\npath ~/testdata\npath ~/nonexistent\n")
+        Path(self.home, ".grisbirc").write_text(
+            "# comment\npath ~/testdata\npath ~/nonexistent\n"
+        )
 
         outdir = Path(self.tmpdir, "output2")
         outdir.mkdir()
@@ -245,9 +247,7 @@ class TestRunner:
         notes.mkdir(exist_ok=True)
         (notes / "n.txt").write_text("note")
 
-        Path(self.home, ".grisbirc").write_text(
-            "~/testdata\npath ~/notes\n"
-        )
+        Path(self.home, ".grisbirc").write_text("~/testdata\npath ~/notes\n")
 
         outdir = Path(self.tmpdir, "output_bare_mixed")
         outdir.mkdir()
@@ -288,7 +288,9 @@ class TestRunner:
         if alpha_files and beta_files:
             self.ok("individual archives created for alpha and beta")
         else:
-            self.fail(f"expected alpha and beta archives, got: {list(outdir.glob('*'))}")
+            self.fail(
+                f"expected alpha and beta archives, got: {list(outdir.glob('*'))}"
+            )
 
     def test_folder_nonexistent(self):
         print("-- folder nonexistent dir")
@@ -320,7 +322,9 @@ class TestRunner:
 
         testdata = Path(self.home, "testdata")
         testdata.mkdir(exist_ok=True)
-        Path(self.home, ".grisbirc").write_text("path ~/testdata\nfolder ~/emptyparent\n")
+        Path(self.home, ".grisbirc").write_text(
+            "path ~/testdata\nfolder ~/emptyparent\n"
+        )
 
         outdir = Path(self.tmpdir, "output_folder_empty")
         outdir.mkdir()

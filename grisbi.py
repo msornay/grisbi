@@ -37,7 +37,11 @@ def parse_config(config_path):
             # Bare path (no directive) treated as "path"
             directive = "path"
             raw_path = stripped
-        expanded = raw_path.replace("~", str(Path.home()), 1) if raw_path.startswith("~") else raw_path
+        expanded = (
+            raw_path.replace("~", str(Path.home()), 1)
+            if raw_path.startswith("~")
+            else raw_path
+        )
         entries.append((directive, expanded))
 
     if not entries:
@@ -175,7 +179,10 @@ def cmd_backup(config_path):
             capture_output=True,
         )
         if tar_proc.returncode != 0:
-            print(f"Warning: tar failed for {d}: {tar_proc.stderr.decode()}", file=sys.stderr)
+            print(
+                f"Warning: tar failed for {d}: {tar_proc.stderr.decode()}",
+                file=sys.stderr,
+            )
             continue
 
         age_encrypt(tar_proc.stdout, outfile, use_bp)
@@ -207,7 +214,9 @@ def cmd_restore(filepath):
         capture_output=True,
     )
     if tar_proc.returncode != 0:
-        print(f"Error: tar extraction failed: {tar_proc.stderr.decode()}", file=sys.stderr)
+        print(
+            f"Error: tar extraction failed: {tar_proc.stderr.decode()}", file=sys.stderr
+        )
         sys.exit(1)
 
     print(f"Restored from {filepath}")
@@ -239,7 +248,10 @@ def cmd_prune(days_str):
         try:
             file_dt = datetime.strptime(ts_str, "%Y-%m-%d-%H%M%S")
         except ValueError:
-            print(f"Warning: cannot parse timestamp in {f.name}, skipping.", file=sys.stderr)
+            print(
+                f"Warning: cannot parse timestamp in {f.name}, skipping.",
+                file=sys.stderr,
+            )
             continue
 
         age_days = (now - file_dt).total_seconds() / 86400
