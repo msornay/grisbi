@@ -458,9 +458,7 @@ class TestRunner:
         notes = Path(self.home, "notes")
         notes.mkdir(exist_ok=True)
 
-        Path(self.home, ".grisbirc").write_text(
-            "path ~/testdata\npath ~/notes\n"
-        )
+        Path(self.home, ".grisbirc").write_text("path ~/testdata\npath ~/notes\n")
 
         rc, output = run_grisbi("--check")
         if rc == 0 and "Directories to back up (2)" in output:
@@ -528,9 +526,7 @@ class TestRunner:
         notes.mkdir(exist_ok=True)
         (notes / "n.txt").write_text("note")
 
-        Path(self.home, ".grisbirc").write_text(
-            "directory ~/testdata\npath ~/notes\n"
-        )
+        Path(self.home, ".grisbirc").write_text("directory ~/testdata\npath ~/notes\n")
 
         outdir = Path(self.tmpdir, "output_directory_mixed")
         outdir.mkdir()

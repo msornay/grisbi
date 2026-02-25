@@ -69,6 +69,95 @@ Deletes `.tar.gz.age` files in the current directory older than the given number
 ln -s "$(pwd)/grisbi.py" ~/bin/grisbi
 ```
 
+## Scheduled backups on macOS
+
+You can run grisbi automatically every day using a macOS LaunchAgent.
+
+### 1. Store the passphrase in Keychain
+
+```bash
+security add-generic-password -s grisbi -a "$USER" -w
+```
+
+This prompts for the passphrase and stores it securely. To verify:
+
+```bash
+security find-generic-password -s grisbi -a "$USER" -w
+```
+
+### 2. Create a wrapper script
+
+Save this as `~/bin/grisbi-daily` (or wherever you keep scripts):
+
+```bash
+#!/bin/bash
+set -euo pipefail
+
+BACKUP_DIR="$HOME/Backups/grisbi"
+PRUNE_DAYS=90
+
+mkdir -p "$BACKUP_DIR"
+cd "$BACKUP_DIR"
+
+export AGE_PASSPHRASE
+AGE_PASSPHRASE=$(security find-generic-password -s grisbi -a "$USER" -w)
+
+grisbi
+grisbi --prune "$PRUNE_DAYS"
+```
+
+```bash
+chmod +x ~/bin/grisbi-daily
+```
+
+### 3. Install the LaunchAgent
+
+Save this as `~/Library/LaunchAgents/com.grisbi.daily.plist`:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.grisbi.daily</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>-l</string>
+        <string>-c</string>
+        <string>~/bin/grisbi-daily</string>
+    </array>
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>12</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+    <key>StandardOutPath</key>
+    <string>/tmp/grisbi-daily.log</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/grisbi-daily.log</string>
+</dict>
+</plist>
+```
+
+Load it:
+
+```bash
+launchctl load ~/Library/LaunchAgents/com.grisbi.daily.plist
+```
+
+This runs grisbi daily at noon. Missed runs (laptop was asleep) execute at the next wake. To unload:
+
+```bash
+launchctl unload ~/Library/LaunchAgents/com.grisbi.daily.plist
+```
+
+**Note:** Requires `age` and `age-plugin-batchpass` in your PATH (the login shell `-l` flag ensures `brew` paths are available).
+
 ## Testing
 
 ```bash
