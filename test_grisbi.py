@@ -83,6 +83,13 @@ class TestRunner:
             self.test_folder_nonexistent()
             self.test_folder_empty()
             self.test_folder_empty_suggests_path()
+            self.test_folder_empty_hint()
+            self.test_env_var_expansion()
+            self.test_env_var_home_expansion()
+            self.test_env_var_in_folder_directive()
+            self.test_check_command()
+            self.test_check_no_valid_dirs()
+            self.test_folder_only_no_subdirs()
             self.test_directory_directive()
             self.test_directory_directive_mixed()
             self.test_prune_missing_arg()
@@ -355,6 +362,144 @@ class TestRunner:
             self.ok("folder empty suggests using path")
         else:
             self.fail(f"expected path suggestion: {output}")
+
+    def test_folder_empty_hint(self):
+        print("-- folder empty dir shows hint to use path")
+        emptyparent = Path(self.home, "emptyparent3")
+        emptyparent.mkdir()
+        (emptyparent / "file.txt").write_text("not a dir")
+
+        testdata = Path(self.home, "testdata")
+        testdata.mkdir(exist_ok=True)
+        Path(self.home, ".grisbirc").write_text(
+            "path ~/testdata\nfolder ~/emptyparent3\n"
+        )
+
+        outdir = Path(self.tmpdir, "output_folder_hint")
+        outdir.mkdir()
+
+        rc, output = run_grisbi(stdin_text="secret\nsecret\n", cwd=str(outdir))
+        if "Hint" in output and "path" in output:
+            self.ok("folder empty dir shows hint to use path directive")
+        else:
+            self.fail(f"expected hint message: {output}")
+
+    # --- Environment variable expansion tests ---
+
+    def test_env_var_expansion(self):
+        print("-- $VAR expansion in paths")
+        testdata = Path(self.home, "mydata")
+        testdata.mkdir(exist_ok=True)
+        (testdata / "file.txt").write_text("hello")
+
+        Path(self.home, ".grisbirc").write_text("path $GRISBI_TEST_DIR\n")
+
+        outdir = Path(self.tmpdir, "output_envvar")
+        outdir.mkdir()
+
+        rc, output = run_grisbi(
+            stdin_text="secret\nsecret\n",
+            cwd=str(outdir),
+            env_extra={"GRISBI_TEST_DIR": str(testdata)},
+        )
+        if "1 archive(s) created" in output:
+            self.ok("$VAR expansion works in path directive")
+        else:
+            self.fail(f"env var expansion failed: {output}")
+
+    def test_env_var_home_expansion(self):
+        print("-- $HOME expansion in paths")
+        testdata = Path(self.home, "testdata")
+        testdata.mkdir(exist_ok=True)
+        (testdata / "file.txt").write_text("hello")
+
+        Path(self.home, ".grisbirc").write_text("path $HOME/testdata\n")
+
+        outdir = Path(self.tmpdir, "output_envhome")
+        outdir.mkdir()
+
+        rc, output = run_grisbi(stdin_text="secret\nsecret\n", cwd=str(outdir))
+        if "1 archive(s) created" in output:
+            self.ok("$HOME expansion works")
+        else:
+            self.fail(f"$HOME expansion failed: {output}")
+
+    def test_env_var_in_folder_directive(self):
+        print("-- $VAR expansion in folder directive")
+        parent = Path(self.home, "envprojects")
+        parent.mkdir()
+        (parent / "proj1").mkdir()
+        (parent / "proj1" / "f.txt").write_text("content")
+        (parent / "proj2").mkdir()
+        (parent / "proj2" / "f.txt").write_text("content")
+
+        Path(self.home, ".grisbirc").write_text("folder $GRISBI_FOLDER\n")
+
+        outdir = Path(self.tmpdir, "output_envfolder")
+        outdir.mkdir()
+
+        rc, output = run_grisbi(
+            stdin_text="secret\nsecret\n",
+            cwd=str(outdir),
+            env_extra={"GRISBI_FOLDER": str(parent)},
+        )
+        if "2 archive(s) created" in output:
+            self.ok("$VAR expansion works in folder directive")
+        else:
+            self.fail(f"env var in folder failed: {output}")
+
+    # --- Check command tests ---
+
+    def test_check_command(self):
+        print("-- check command")
+        testdata = Path(self.home, "testdata")
+        testdata.mkdir(exist_ok=True)
+        (testdata / "file.txt").write_text("hello")
+        notes = Path(self.home, "notes")
+        notes.mkdir(exist_ok=True)
+
+        Path(self.home, ".grisbirc").write_text(
+            "path ~/testdata\npath ~/notes\n"
+        )
+
+        rc, output = run_grisbi("--check")
+        if rc == 0 and "Directories to back up (2)" in output:
+            self.ok("check shows directory count")
+        else:
+            self.fail(f"check failed: rc={rc}, output={output}")
+        if "testdata" in output and "notes" in output:
+            self.ok("check lists directories")
+        else:
+            self.fail(f"check missing dirs: {output}")
+
+    def test_check_no_valid_dirs(self):
+        print("-- check with no valid dirs")
+        Path(self.home, ".grisbirc").write_text("path ~/nonexistent\n")
+
+        rc, output = run_grisbi("--check")
+        if rc != 0 and "No valid directories" in output:
+            self.ok("check reports no valid directories")
+        else:
+            self.fail(f"expected error: rc={rc}, output={output}")
+
+    def test_folder_only_no_subdirs(self):
+        print("-- folder only config with no subdirs (common mistake)")
+        flatdir = Path(self.home, "flatdir")
+        flatdir.mkdir()
+        (flatdir / "a.txt").write_text("a")
+        (flatdir / "b.txt").write_text("b")
+
+        Path(self.home, ".grisbirc").write_text("folder ~/flatdir\n")
+
+        rc, output = run_grisbi("--check")
+        if rc != 0:
+            self.ok("folder-only with no subdirs fails as expected")
+        else:
+            self.fail(f"expected failure: rc={rc}, output={output}")
+        if "Hint" in output:
+            self.ok("shows actionable hint message")
+        else:
+            self.fail(f"expected hint: {output}")
 
     # --- Directory directive tests ---
 

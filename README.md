@@ -27,6 +27,7 @@ Directives:
 - `folder <dir>` — back up each immediate subdirectory of `<dir>` as a separate archive (note: does **not** back up the directory itself — use `path` for that)
 - `<dir>` — bare path (no directive), treated as `path <dir>`
 - Lines starting with `#` or blank lines are ignored
+- Paths support `~`, `$HOME`, and `$VAR` expansion
 
 ## Usage
 
@@ -45,6 +46,14 @@ grisbi --restore <file.tar.gz.age>
 ```
 
 Prompts for passphrase, decrypts and extracts into the current directory.
+
+### Validate config
+
+```bash
+grisbi --check
+```
+
+Shows which directories would be backed up without creating archives. Useful for verifying `.grisbirc` is configured correctly.
 
 ### Prune old backups
 

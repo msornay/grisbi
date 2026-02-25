@@ -9,6 +9,11 @@ from datetime import datetime
 from pathlib import Path
 
 
+def expand_path(raw_path):
+    """Expand ~ and environment variables in a path string."""
+    return os.path.expandvars(os.path.expanduser(raw_path))
+
+
 def parse_config(config_path):
     """Parse ~/.grisbirc and return list of (directive, expanded_path) tuples.
 
@@ -37,11 +42,7 @@ def parse_config(config_path):
             # Bare path (no directive) treated as "path"
             directive = "path"
             raw_path = stripped
-        expanded = (
-            raw_path.replace("~", str(Path.home()), 1)
-            if raw_path.startswith("~")
-            else raw_path
-        )
+        expanded = expand_path(raw_path)
         entries.append((directive, expanded))
 
     if not entries:
@@ -62,19 +63,26 @@ def resolve_backup_dirs(entries):
         p = Path(path_str)
         if directive == "path":
             if not p.is_dir():
-                print(f"Warning: {p} does not exist, skipping.", file=sys.stderr)
+                print(
+                    f"Warning: path {p} is not a directory or does not exist, "
+                    f"skipping.",
+                    file=sys.stderr,
+                )
                 continue
             dirs.append(p)
         elif directive == "folder":
             if not p.is_dir():
-                print(f"Warning: {p} does not exist, skipping.", file=sys.stderr)
+                print(
+                    f"Warning: folder {p} is not a directory or does not exist, "
+                    f"skipping.",
+                    file=sys.stderr,
+                )
                 continue
             children = sorted(child for child in p.iterdir() if child.is_dir())
             if not children:
                 print(
-                    f"Warning: {p} has no subdirectories, skipping."
-                    f" (To back up the directory itself, use 'path {path_str}'"
-                    f" instead of 'folder')",
+                    f"Warning: folder {p} has no subdirectories, skipping. "
+                    f"(Hint: use 'path {path_str}' to back up the directory itself.)",
                     file=sys.stderr,
                 )
             dirs.extend(children)
@@ -142,6 +150,21 @@ def age_decrypt(infile, use_batchpass):
         sys.exit(1)
 
     return proc.stdout
+
+
+def cmd_check(config_path):
+    """Validate config and show what would be backed up."""
+    entries = parse_config(config_path)
+    dirs = resolve_backup_dirs(entries)
+
+    if not dirs:
+        print("No valid directories to back up.", file=sys.stderr)
+        sys.exit(1)
+
+    print(f"Config: {config_path}")
+    print(f"Directories to back up ({len(dirs)}):")
+    for d in dirs:
+        print(f"  {d}")
 
 
 def cmd_backup(config_path):
@@ -294,6 +317,9 @@ def main():
             )
             sys.exit(1)
         cmd_prune(args[1])
+    elif args and args[0] == "--check":
+        config_path = Path.home() / ".grisbirc"
+        cmd_check(config_path)
     else:
         config_path = Path.home() / ".grisbirc"
         cmd_backup(config_path)
