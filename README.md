@@ -158,6 +158,45 @@ launchctl unload ~/Library/LaunchAgents/com.grisbi.daily.plist
 
 **Note:** Requires `age` and `age-plugin-batchpass` in your PATH (the login shell `-l` flag ensures `brew` paths are available).
 
+### Periodic backups (every N hours)
+
+To run backups at a fixed interval instead of a specific time, use `StartInterval` (in seconds). This example backs up every 4 hours.
+
+The wrapper script and Keychain setup are the same as above. Only the plist changes.
+
+Save this as `~/Library/LaunchAgents/com.grisbi.periodic.plist`:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.grisbi.periodic</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>-l</string>
+        <string>-c</string>
+        <string>~/bin/grisbi-daily</string>
+    </array>
+    <key>StartInterval</key>
+    <integer>14400</integer>
+    <key>StandardOutPath</key>
+    <string>/tmp/grisbi-periodic.log</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/grisbi-periodic.log</string>
+</dict>
+</plist>
+```
+
+```bash
+launchctl load ~/Library/LaunchAgents/com.grisbi.periodic.plist
+```
+
+Unlike `StartCalendarInterval`, `StartInterval` does **not** catch up on missed runs — if the laptop was asleep for 8 hours, it runs once on wake, not twice. Adjust the interval (in seconds) to suit: 3600 = 1 hour, 14400 = 4 hours, 21600 = 6 hours.
+
 ## Testing
 
 ```bash
