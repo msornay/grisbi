@@ -41,6 +41,22 @@ def run_grisbi(*args, stdin_text="", env_extra=None, cwd=None):
     return proc.returncode, proc.stdout + proc.stderr
 
 
+def run_grisbi_split(*args, stdin_text="", env_extra=None, cwd=None):
+    """Run grisbi.py, return (returncode, stdout, stderr) separately."""
+    env = os.environ.copy()
+    if env_extra:
+        env.update(env_extra)
+    proc = subprocess.run(
+        [sys.executable, str(SCRIPT)] + list(args),
+        input=stdin_text,
+        capture_output=True,
+        text=True,
+        env=env,
+        cwd=cwd,
+    )
+    return proc.returncode, proc.stdout, proc.stderr
+
+
 class TestRunner:
     def __init__(self):
         self.passed = 0
@@ -103,6 +119,7 @@ class TestRunner:
             self.test_restore_round_trip()
             self.test_backup_with_age_passphrase_env()
             self.test_restore_with_age_passphrase_env()
+            self.test_no_duplicate_error_messages()
         finally:
             self.teardown()
 
@@ -732,6 +749,42 @@ class TestRunner:
             self.ok("restored content matches via env passphrase")
         else:
             self.fail("restored file missing or wrong content")
+
+    # --- Non-duplication tests ---
+
+    def test_no_duplicate_error_messages(self):
+        print("-- error messages not duplicated")
+        # Remove config so missing-config error fires
+        config = Path(self.home, ".grisbirc")
+        if config.exists():
+            config.unlink()
+
+        cases = [
+            ([], "not found", "missing config"),
+            (["--restore"], "Usage", "restore missing arg"),
+            (
+                ["--restore", "/nonexistent.tar.gz.age"],
+                "not found",
+                "restore nonexistent",
+            ),
+            (["--prune"], "Usage", "prune missing arg"),
+            (["--prune", "abc"], "Usage", "prune bad arg"),
+            (["--prune", "0"], "Usage", "prune zero"),
+        ]
+
+        for args, expected_msg, label in cases:
+            rc, stdout, stderr = run_grisbi_split(*args, stdin_text="x\nx\n")
+            if stdout and expected_msg in stdout and expected_msg in stderr:
+                self.fail(f"{label}: message in both stdout and stderr")
+                continue
+            combined = stdout + stderr
+            count = combined.count(expected_msg)
+            if count == 1:
+                self.ok(f"{label}: message appears exactly once")
+            elif count == 0:
+                self.fail(f"{label}: expected '{expected_msg}' not found")
+            else:
+                self.fail(f"{label}: '{expected_msg}' appears {count} times")
 
 
 if __name__ == "__main__":

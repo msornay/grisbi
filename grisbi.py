@@ -219,8 +219,11 @@ def cmd_backup(config_path):
     print(f"{count} archive(s) created, total size: {total_size} bytes")
 
 
-def cmd_restore(filepath):
+def cmd_restore(filepath=None):
     """Restore from an encrypted archive."""
+    if filepath is None:
+        print("Usage: grisbi --restore <file.tar.gz.age>", file=sys.stderr)
+        sys.exit(1)
     p = Path(filepath)
     if not p.is_file():
         print(f"Error: {filepath} not found.", file=sys.stderr)
@@ -249,9 +252,9 @@ def cmd_restore(filepath):
     print(f"Restored from {filepath}")
 
 
-def cmd_prune(days_str):
+def cmd_prune(days_str=None):
     """Delete .tar.gz.age backups older than N days."""
-    if not days_str.isdigit() or int(days_str) == 0:
+    if days_str is None or not days_str.isdigit() or int(days_str) == 0:
         print("Usage: grisbi --prune <days>", file=sys.stderr)
         print(
             "Delete .tar.gz.age backups in the current directory older than <days> days.",
@@ -308,19 +311,9 @@ def main():
     args = sys.argv[1:]
 
     if args and args[0] == "--restore":
-        if len(args) < 2:
-            print("Usage: grisbi --restore <file.tar.gz.age>", file=sys.stderr)
-            sys.exit(1)
-        cmd_restore(args[1])
+        cmd_restore(args[1] if len(args) >= 2 else None)
     elif args and args[0] == "--prune":
-        if len(args) < 2:
-            print("Usage: grisbi --prune <days>", file=sys.stderr)
-            print(
-                "Delete .tar.gz.age backups in the current directory older than <days> days.",
-                file=sys.stderr,
-            )
-            sys.exit(1)
-        cmd_prune(args[1])
+        cmd_prune(args[1] if len(args) >= 2 else None)
     elif args and args[0] == "--check":
         config_path = Path.home() / ".grisbirc"
         cmd_check(config_path)
