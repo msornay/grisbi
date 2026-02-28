@@ -101,6 +101,8 @@ class TestRunner:
             self.test_restore_missing_arg()
             self.test_restore_nonexistent_file()
             self.test_restore_round_trip()
+            self.test_backup_with_age_passphrase_env()
+            self.test_restore_with_age_passphrase_env()
         finally:
             self.teardown()
 
@@ -664,6 +666,72 @@ class TestRunner:
                 self.fail(f"restored content mismatch: {content}")
         else:
             self.fail(f"restored file not found at {restored_file}")
+
+    # --- AGE_PASSPHRASE env var tests ---
+
+    def test_backup_with_age_passphrase_env(self):
+        print("-- backup with AGE_PASSPHRASE env (no stdin)")
+        testdata = Path(self.home, "testdata")
+        testdata.mkdir(exist_ok=True)
+        (testdata / "file.txt").write_text("hello")
+        Path(self.home, ".grisbirc").write_text("path ~/testdata\n")
+
+        outdir = Path(self.tmpdir, "output_env_backup")
+        outdir.mkdir()
+
+        rc, output = run_grisbi(
+            stdin_text="",
+            cwd=str(outdir),
+            env_extra={"AGE_PASSPHRASE": "envsecret"},
+        )
+        if rc == 0 and "1 archive(s) created" in output:
+            self.ok("backup succeeds with AGE_PASSPHRASE env")
+        else:
+            self.fail(f"env backup failed: rc={rc}, output={output}")
+
+        if "Passphrase" not in output:
+            self.ok("no passphrase prompt when AGE_PASSPHRASE set")
+        else:
+            self.fail(f"should not prompt: {output}")
+
+        age_files = list(outdir.glob("testdata-*.tar.gz.age"))
+        if age_files:
+            self._env_backup_file = age_files[0]
+        else:
+            self.fail("no .age file created")
+            self._env_backup_file = None
+
+    def test_restore_with_age_passphrase_env(self):
+        print("-- restore with AGE_PASSPHRASE env (no stdin)")
+        if not hasattr(self, "_env_backup_file") or self._env_backup_file is None:
+            self.fail("no backup file from previous test")
+            return
+
+        restore_dir = Path(self.tmpdir, "restored_env")
+        restore_dir.mkdir()
+
+        rc, output = run_grisbi(
+            "--restore",
+            str(self._env_backup_file),
+            stdin_text="",
+            cwd=str(restore_dir),
+            env_extra={"AGE_PASSPHRASE": "envsecret"},
+        )
+        if "Restored from" in output:
+            self.ok("restore succeeds with AGE_PASSPHRASE env")
+        else:
+            self.fail(f"env restore failed: rc={rc}, output={output}")
+
+        if "Passphrase" not in output:
+            self.ok("no passphrase prompt on restore")
+        else:
+            self.fail(f"should not prompt on restore: {output}")
+
+        restored_file = restore_dir / "testdata" / "file.txt"
+        if restored_file.exists() and restored_file.read_text() == "hello":
+            self.ok("restored content matches via env passphrase")
+        else:
+            self.fail("restored file missing or wrong content")
 
 
 if __name__ == "__main__":

@@ -176,16 +176,18 @@ def cmd_backup(config_path):
         print("Error: no valid directories to back up.", file=sys.stderr)
         sys.exit(1)
 
-    # Passphrase prompt
-    passphrase = input_passphrase("Passphrase: ")
-    confirm = input_passphrase("Confirm: ")
-    print()
+    # Use AGE_PASSPHRASE from environment if set, otherwise prompt
+    passphrase = os.environ.get("AGE_PASSPHRASE")
+    if not passphrase:
+        passphrase = input_passphrase("Passphrase: ")
+        confirm = input_passphrase("Confirm: ")
+        print()
 
-    if passphrase != confirm:
-        print("Error: passphrases do not match.", file=sys.stderr)
-        sys.exit(1)
+        if passphrase != confirm:
+            print("Error: passphrases do not match.", file=sys.stderr)
+            sys.exit(1)
 
-    os.environ["AGE_PASSPHRASE"] = passphrase
+        os.environ["AGE_PASSPHRASE"] = passphrase
     use_bp = has_batchpass()
 
     timestamp = datetime.now().strftime("%Y-%m-%d-%H%M%S")
@@ -224,9 +226,11 @@ def cmd_restore(filepath):
         print(f"Error: {filepath} not found.", file=sys.stderr)
         sys.exit(1)
 
-    passphrase = input_passphrase("Passphrase: ")
-    print()
-    os.environ["AGE_PASSPHRASE"] = passphrase
+    passphrase = os.environ.get("AGE_PASSPHRASE")
+    if not passphrase:
+        passphrase = input_passphrase("Passphrase: ")
+        print()
+        os.environ["AGE_PASSPHRASE"] = passphrase
 
     use_bp = has_batchpass()
     plaintext = age_decrypt(p, use_bp)
