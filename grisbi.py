@@ -187,7 +187,7 @@ def cmd_backup(config_path):
             print("Error: passphrases do not match.", file=sys.stderr)
             sys.exit(1)
 
-        os.environ["AGE_PASSPHRASE"] = passphrase
+    os.environ["AGE_PASSPHRASE"] = passphrase
     use_bp = has_batchpass()
 
     timestamp = datetime.now().strftime("%Y-%m-%d-%H%M%S")
@@ -233,8 +233,8 @@ def cmd_restore(filepath=None):
     if not passphrase:
         passphrase = input_passphrase("Passphrase: ")
         print()
-        os.environ["AGE_PASSPHRASE"] = passphrase
 
+    os.environ["AGE_PASSPHRASE"] = passphrase
     use_bp = has_batchpass()
     plaintext = age_decrypt(p, use_bp)
 
