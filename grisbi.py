@@ -98,7 +98,7 @@ def has_batchpass():
             check=False,
         )
         return True
-    except FileNotFoundError:
+    except OSError:
         return False
 
 

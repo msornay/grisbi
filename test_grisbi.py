@@ -120,6 +120,7 @@ class TestRunner:
             self.test_backup_with_age_passphrase_env()
             self.test_restore_with_age_passphrase_env()
             self.test_no_duplicate_error_messages()
+            self.test_has_batchpass_oserror()
         finally:
             self.teardown()
 
@@ -785,6 +786,27 @@ class TestRunner:
                 self.fail(f"{label}: expected '{expected_msg}' not found")
             else:
                 self.fail(f"{label}: '{expected_msg}' appears {count} times")
+
+    def test_has_batchpass_oserror(self):
+        print("-- has_batchpass handles non-executable binary (OSError)")
+        import importlib.util
+        import unittest.mock
+
+        spec = importlib.util.spec_from_file_location("grisbi", SCRIPT)
+        grisbi_mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(grisbi_mod)
+
+        with unittest.mock.patch.object(
+            grisbi_mod.subprocess,
+            "run",
+            side_effect=OSError("Exec format error"),
+        ):
+            result = grisbi_mod.has_batchpass()
+
+        if result is False:
+            self.ok("has_batchpass returns False for non-executable binary")
+        else:
+            self.fail(f"has_batchpass returned {result}, expected False")
 
 
 if __name__ == "__main__":
